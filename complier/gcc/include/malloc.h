@@ -1,214 +1,266 @@
-/*
- * malloc.h
- *
- * Declarations for non-standard heap management, and memory allocation
- * functions.  These augment the standard functions, which are declared
- * in <stdlib.h>
- *
- * $Id: malloc.h,v 730a8ef64a92 2018/12/20 19:30:25 keith $
- *
- * Written by Colin Peters <colin@bird.fu.is.saga-u.ac.jp>
- * Copyright (C) 1997-1999, 2001-2005, 2007, 2018, MinGW.org Project.
- *
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice, this permission notice, and the following
- * disclaimer, shall be included in all copies or substantial portions of
- * the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OF OR OTHER
- * DEALINGS IN THE SOFTWARE.
- *
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
  */
-#ifndef _MALLOC_H
-#pragma GCC system_header
-#define _MALLOC_H
+#ifndef _MALLOC_H_
+#define _MALLOC_H_
 
-/* All MinGW headers assume that <_mingw.h> is included; including
- * <stdlib.h>, which we also need here, is sufficient to make it so.
- */
-#include <stdlib.h>
+#include <crtdefs.h>
+
+#pragma pack(push,_CRT_PACKING)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#ifdef _WIN64
+#define _HEAP_MAXREQ 0xFFFFFFFFFFFFFFE0
+#else
+#define _HEAP_MAXREQ 0xFFFFFFE0
+#endif
+
+#ifndef _STATIC_ASSERT
+#if (defined(__cpp_static_assert) && __cpp_static_assert >= 201411L) || (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 202311L)
+#define _STATIC_ASSERT(expr) static_assert(expr)
+#elif defined(__cpp_static_assert)
+#define _STATIC_ASSERT(expr) static_assert(expr, #expr)
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#define _STATIC_ASSERT(expr) _Static_assert(expr, #expr)
+#elif defined(_MSC_VER)
+#define _STATIC_ASSERT(expr) typedef char __static_assert_t[(expr)]
+#else
+#define _STATIC_ASSERT(expr) extern void __static_assert_t(int [(expr)?1:-1])
+#endif
+#endif
+
+/* Return codes for _heapwalk()  */
+#define _HEAPEMPTY (-1)
+#define _HEAPOK (-2)
+#define _HEAPBADBEGIN (-3)
+#define _HEAPBADNODE (-4)
+#define _HEAPEND (-5)
+#define _HEAPBADPTR (-6)
+
+/* Values for _heapinfo.useflag */
+#define _FREEENTRY 0
+#define _USEDENTRY 1
+
+#ifndef _HEAPINFO_DEFINED
+#define _HEAPINFO_DEFINED
+ /* The structure used to walk through the heap with _heapwalk.  */
+  typedef struct _heapinfo {
+    int *_pentry;
+    size_t _size;
+    int _useflag;
+  } _HEAPINFO;
+#endif
+
+#define _amblksiz (*__p__amblksiz())
+  _CRTIMP unsigned int *__cdecl __p__amblksiz(void);
+
+#ifndef _CRT_ALLOCATION_DEFINED
+#define _CRT_ALLOCATION_DEFINED
+
+#if defined(_DEBUG) && defined(_CRTDBG_MAP_ALLOC)
+#pragma push_macro("calloc")
+#undef calloc
+#pragma push_macro("free")
+#undef free
+#pragma push_macro("malloc")
+#undef malloc
+#pragma push_macro("realloc")
+#undef realloc
+#pragma push_macro("_aligned_free")
+#undef _aligned_free
+#pragma push_macro("_aligned_malloc")
+#undef _aligned_malloc
+#pragma push_macro("_aligned_offset_malloc")
+#undef _aligned_offset_malloc
+#pragma push_macro("_aligned_realloc")
+#undef _aligned_realloc
+#pragma push_macro("_aligned_offset_realloc")
+#undef _aligned_offset_realloc
+#pragma push_macro("_recalloc")
+#undef _recalloc
+#pragma push_macro("_aligned_recalloc")
+#undef _aligned_recalloc
+#pragma push_macro("_aligned_offset_recalloc")
+#undef _aligned_offset_recalloc
+#pragma push_macro("_aligned_msize")
+#undef _aligned_msize
+#endif
+
+  void *__cdecl calloc(size_t _NumOfElements,size_t _SizeOfElements);
+  void __cdecl free(void *_Memory);
+  void *__cdecl malloc(size_t _Size);
+  void *__cdecl realloc(void *_Memory,size_t _NewSize);
+
+  _CRTIMP void __cdecl _aligned_free(void *_Memory);
+  _CRTIMP void *__cdecl _aligned_malloc(size_t _Size,size_t _Alignment);
+
+  _CRTIMP void *__cdecl _aligned_offset_malloc(size_t _Size,size_t _Alignment,size_t _Offset);
+  _CRTIMP void *__cdecl _aligned_realloc(void *_Memory,size_t _Size,size_t _Alignment);
+  _CRTIMP void *__cdecl _aligned_offset_realloc(void *_Memory,size_t _Size,size_t _Alignment,size_t _Offset);
+  _CRTIMP void *__cdecl _recalloc(void *_Memory,size_t _Count,size_t _Size);
+  _CRTIMP void *__cdecl _aligned_recalloc(void *_Memory,size_t _Count,size_t _Size,size_t _Alignment);
+  _CRTIMP void *__cdecl _aligned_offset_recalloc(void *_Memory,size_t _Count,size_t _Size,size_t _Alignment,size_t _Offset);
+  _CRTIMP size_t __cdecl _aligned_msize(void *_Memory,size_t _Alignment,size_t _Offset);
+
+#if defined(_DEBUG) && defined(_CRTDBG_MAP_ALLOC)
+#pragma pop_macro("calloc")
+#pragma pop_macro("free")
+#pragma pop_macro("malloc")
+#pragma pop_macro("realloc")
+#pragma pop_macro("_aligned_free")
+#pragma pop_macro("_aligned_malloc")
+#pragma pop_macro("_aligned_offset_malloc")
+#pragma pop_macro("_aligned_realloc")
+#pragma pop_macro("_aligned_offset_realloc")
+#pragma pop_macro("_recalloc")
+#pragma pop_macro("_aligned_recalloc")
+#pragma pop_macro("_aligned_offset_recalloc")
+#pragma pop_macro("_aligned_msize")
+#endif
+
+#endif
+
+/* Users should really use MS provided versions */
+void * __mingw_aligned_malloc (size_t _Size, size_t _Alignment);
+void __mingw_aligned_free (void *_Memory);
+void * __mingw_aligned_offset_realloc (void *_Memory, size_t _Size, size_t _Alignment, size_t _Offset);
+void * __mingw_aligned_offset_malloc (size_t, size_t, size_t);
+void * __mingw_aligned_realloc (void *_Memory, size_t _Size, size_t _Offset);
+size_t __mingw_aligned_msize (void *memblock, size_t alignment, size_t offset);
+
+#if defined(__x86_64__) || defined(__i386__)
+/* Get the compiler's definition of _mm_malloc and _mm_free. */
+#include <mm_malloc.h>
+#endif
+
+#define _MAX_WAIT_MALLOC_CRT 60000
+
+#ifdef _CRT_USE_WINAPI_FAMILY_DESKTOP_APP
+  _CRTIMP int __cdecl _resetstkoflw (void);
+#endif /* _CRT_USE_WINAPI_FAMILY_DESKTOP_APP */
+  _CRTIMP unsigned long __cdecl _set_malloc_crt_max_wait(unsigned long _NewValue);
+
+#if defined(_DEBUG) && defined(_CRTDBG_MAP_ALLOC)
+#pragma push_macro("_expand")
+#undef _expand
+#pragma push_macro("_msize")
+#undef _msize
+#endif
+  _CRTIMP void *__cdecl _expand(void *_Memory,size_t _NewSize);
+  _CRTIMP size_t __cdecl _msize(void *_Memory);
+#if defined(_DEBUG) && defined(_CRTDBG_MAP_ALLOC)
+#pragma pop_macro("_expand")
+#pragma pop_macro("_msize")
+#endif
+
+#ifdef __GNUC__
+#undef _alloca
+#define _alloca(x) __builtin_alloca((x))
+#else
+  void *__cdecl _alloca(size_t _Size) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
+#endif
+  _CRTIMP size_t __cdecl _get_sbh_threshold(void);
+  _CRTIMP int __cdecl _set_sbh_threshold(size_t _NewValue);
+  _CRTIMP errno_t __cdecl _set_amblksiz(size_t _Value);
+  _CRTIMP errno_t __cdecl _get_amblksiz(size_t *_Value);
+  _CRTIMP int __cdecl _heapadd(void *_Memory,size_t _Size);
+  _CRTIMP int __cdecl _heapchk(void);
+  _CRTIMP int __cdecl _heapmin(void);
+  _CRTIMP int __cdecl _heapset(unsigned int _Fill);
+  _CRTIMP int __cdecl _heapwalk(_HEAPINFO *_EntryInfo);
+  _CRTIMP size_t __cdecl _heapused(size_t *_Used,size_t *_Commit);
+  _CRTIMP intptr_t __cdecl _get_heap_handle(void);
+
+#define _ALLOCA_S_THRESHOLD 1024
+#define _ALLOCA_S_STACK_MARKER 0xCCCC
+#define _ALLOCA_S_HEAP_MARKER 0xDDDD
+
+#if defined(_ARM_) || (defined(_X86_) && !defined(__x86_64))
+#define _ALLOCA_S_MARKER_SIZE 8
+#elif defined(__ia64__) || defined(__x86_64) || defined(__aarch64__)
+#define _ALLOCA_S_MARKER_SIZE 16
+#endif
+
+#if !defined(RC_INVOKED)
+  static __inline void *_MarkAllocaS(void *_Ptr,unsigned int _Marker) {
+    if(_Ptr) {
+      *((unsigned int*)_Ptr) = _Marker;
+      _Ptr = (char*)_Ptr + _ALLOCA_S_MARKER_SIZE;
+    }
+    return _Ptr;
+  }
+#endif
+
+#ifdef _DEBUG
+#ifndef _CRTDBG_MAP_ALLOC
+#undef _malloca
+#define _malloca(size) \
+    _MarkAllocaS(malloc((size) + _ALLOCA_S_MARKER_SIZE), _ALLOCA_S_HEAP_MARKER)
+#endif
+#else
+#undef _malloca
+#define _malloca(size) \
+  ((((size) + _ALLOCA_S_MARKER_SIZE) <= _ALLOCA_S_THRESHOLD) ? \
+    _MarkAllocaS(_alloca((size) + _ALLOCA_S_MARKER_SIZE),_ALLOCA_S_STACK_MARKER) : \
+    _MarkAllocaS(malloc((size) + _ALLOCA_S_MARKER_SIZE),_ALLOCA_S_HEAP_MARKER))
+#endif
+
+#undef _FREEA_INLINE
+#define _FREEA_INLINE
 
 #ifndef RC_INVOKED
+#undef _freea
+  static __inline void __cdecl _freea(void *_Memory) {
+    unsigned int _Marker;
+    if(_Memory) {
+      _Memory = (char*)_Memory - _ALLOCA_S_MARKER_SIZE;
+      _Marker = *(unsigned int *)_Memory;
+      if(_Marker==_ALLOCA_S_HEAP_MARKER) {
+	free(_Memory);
+      }
+#ifdef _ASSERTE
+      else if(_Marker!=_ALLOCA_S_STACK_MARKER) {
+	_ASSERTE(("Corrupted pointer passed to _freea",0));
+      }
+#endif
+    }
+  }
+#endif /* RC_INVOKED */
 
-/* Microsoft stipulate that the alloca() API should be defined in this
- * header, whereas GNU specify it in its own dedicated header file; to
- * comply with both, we adopt the GNU stratagem, and then include the
- * GNU style dedicated header file here.
- */
-#include "alloca.h"
+#ifndef	NO_OLDNAMES
+#undef alloca
+#ifdef __GNUC__
+#define alloca(x) __builtin_alloca((x))
+#else
+#define alloca _alloca
+#endif
+#endif
 
-typedef
-struct _heapinfo
-{ /* The structure used to control operation, and return information,
-   * when walking the heap using the _heapwalk() function.
-   */
-  int		*_pentry;
-  size_t	 _size;
-  int		 _useflag;
-} _HEAPINFO;
+#ifdef HEAPHOOK
+#ifndef _HEAPHOOK_DEFINED
+#define _HEAPHOOK_DEFINED
+  typedef int (__cdecl *_HEAPHOOK)(int,size_t,void *,void **);
+#endif
 
-/* Status codes returned by _heapwalk()
- */
-#define _HEAPEMPTY		(-1)
-#define _HEAPOK 		(-2)
-#define _HEAPBADBEGIN		(-3)
-#define _HEAPBADNODE		(-4)
-#define _HEAPEND		(-5)
-#define _HEAPBADPTR		(-6)
+  _CRTIMP _HEAPHOOK __cdecl _setheaphook(_HEAPHOOK _NewHook);
 
-/* Values returned by _heapwalk(), in the _HEAPINFO.useflag
- */
-#define _FREEENTRY		 (0)
-#define _USEDENTRY		 (1)
+#define _HEAP_MALLOC 1
+#define _HEAP_CALLOC 2
+#define _HEAP_FREE 3
+#define _HEAP_REALLOC 4
+#define _HEAP_MSIZE 5
+#define _HEAP_EXPAND 6
+#endif
 
-/* Maximum size permitted for a heap memory allocation request
- */
-#define _HEAP_MAXREQ	(0xFFFFFFE0)
+#ifdef __cplusplus
+}
+#endif
 
-_BEGIN_C_DECLS
+#pragma pack(pop)
 
-/* The _heap memory allocation functions are supported on WinNT, but not on
- * Win9X, (on which they always simply set errno to ENOSYS).
- */
-_CRTIMP __cdecl __MINGW_NOTHROW  int    _heapwalk (_HEAPINFO *);
-
-_CRTIMP __cdecl __MINGW_NOTHROW  int    _heapchk (void);
-_CRTIMP __cdecl __MINGW_NOTHROW  int    _heapmin (void);
-
-_CRTIMP __cdecl __MINGW_NOTHROW  int    _heapset (unsigned int);
-
-_CRTIMP __cdecl __MINGW_NOTHROW  size_t _msize (void *);
-_CRTIMP __cdecl __MINGW_NOTHROW  size_t _get_sbh_threshold (void);
-_CRTIMP __cdecl __MINGW_NOTHROW  int    _set_sbh_threshold (size_t);
-_CRTIMP __cdecl __MINGW_NOTHROW  void  *_expand (void *, size_t);
-
-#ifndef _NO_OLDNAMES
-/* Legacy versions of Microsoft runtimes may have supported this alternative
- * name for the _heapwalk() API.
- */
-_CRTIMP __cdecl __MINGW_NOTHROW  int     heapwalk (_HEAPINFO *);
-#endif	/* !_NO_OLDNAMES */
-
-#if __MSVCRT_VERSION__ >= __MSVCR70_DLL
-/* First introduced in non-free MSVCR70.DLL, the following were subsequently
- * made available from MSVCRT.DLL, from the release of WinXP onwards; however,
- * we choose to declare them only for the non-free case, preferring to emulate
- * them, in terms of libmingwex.a replacement implementations, for consistent
- * behaviour across ALL MSVCRT.DLL versions.
- */
-_CRTIMP __cdecl __MINGW_NOTHROW __MINGW_ATTRIB_MALLOC
-void *_aligned_malloc (size_t, size_t);
-
-_CRTIMP __cdecl __MINGW_NOTHROW __MINGW_ATTRIB_MALLOC
-void *_aligned_offset_malloc (size_t, size_t, size_t);
-
-_CRTIMP __cdecl __MINGW_NOTHROW
-void *_aligned_realloc (void *, size_t, size_t);
-
-_CRTIMP __cdecl __MINGW_NOTHROW
-void *_aligned_offset_realloc (void *, size_t, size_t, size_t);
-
-_CRTIMP __cdecl __MINGW_NOTHROW
-void  _aligned_free (void *);
-
-/* Curiously, there are no "calloc()" alike variants of the following pair of
- * "recalloc()" alike functions; furthermore, neither of these is provided by
- * any version of pseudo-free MSVCRT.DLL
- */
-_CRTIMP __cdecl __MINGW_NOTHROW
-void *_aligned_recalloc (void *, size_t, size_t, size_t);
-
-_CRTIMP __cdecl __MINGW_NOTHROW
-void *_aligned_offset_recalloc (void *, size_t, size_t, size_t, size_t);
-
-#endif	/* Non-free MSVCR70.DLL, or later */
-
-/* The following emulations are provided in libmingwex.a; they are suitable
- * for use on any Windows version, irrespective of the limited availability
- * of the preceding Microsoft implementations.
- */
-__cdecl __MINGW_NOTHROW __MINGW_ATTRIB_MALLOC
-void *__mingw_aligned_malloc (size_t, size_t);
-
-__cdecl __MINGW_NOTHROW __MINGW_ATTRIB_MALLOC
-void *__mingw_aligned_offset_malloc (size_t, size_t, size_t);
-
-__cdecl __MINGW_NOTHROW
-void *__mingw_aligned_offset_realloc (void *, size_t, size_t, size_t);
-
-__cdecl __MINGW_NOTHROW
-void *__mingw_aligned_realloc (void *, size_t, size_t);
-
-__cdecl __MINGW_NOTHROW
-void __mingw_aligned_free (void *);
-
-#if __MSVCRT_VERSION__ < __MSVCR70_DLL
-/* Although the Microsoft aligned heap allocation functions are present in
- * MSVCRT.DLL, from WinXP onwards, we choose to retain our legacy supporting
- * emulations across all MSVCRT.DLL versions; thus, we enable the following
- * in-line emulations in all cases where the user has not specified use of
- * non-free MSVCR70.DLL or later.
- *
- * Note that because these emulations are deployed as in-line replacements
- * of their emulated function calls, GCC will not normally provide any means
- * of obtaining externally accessible entry-point addresses for them; if it
- * becomes necessary to dereference such an address, the requirement may be
- * satisfied by linking with the auxiliary "-lmemalign" library.
- */
-__cdecl __MINGW_NOTHROW __MINGW_ATTRIB_MALLOC
-__CRT_ALIAS __LIBIMPL__((LIB = memalign, FUNCTION = aligned_malloc))
-void *_aligned_malloc (size_t __wanted, size_t __aligned )
-{ return __mingw_aligned_offset_malloc (__wanted, __aligned, (size_t)(0)); }
-
-__cdecl __MINGW_NOTHROW __MINGW_ATTRIB_MALLOC
-__CRT_ALIAS __LIBIMPL__((LIB = memalign, FUNCTION = aligned_offset_malloc))
-void *_aligned_offset_malloc (size_t __wanted, size_t __aligned, size_t __offset )
-{ return __mingw_aligned_offset_malloc (__wanted, __aligned, __offset); }
-
-__cdecl __MINGW_NOTHROW
-__CRT_ALIAS __LIBIMPL__((LIB = memalign, FUNCTION = aligned_realloc))
-void *_aligned_realloc (void *__ptr, size_t __wanted, size_t __aligned )
-{ return __mingw_aligned_offset_realloc (__ptr, __wanted, __aligned, (size_t)(0)); }
-
-__cdecl __MINGW_NOTHROW
-__CRT_ALIAS __LIBIMPL__((LIB = memalign, FUNCTION = aligned_offset_realloc))
-void *_aligned_offset_realloc (void *__ptr, size_t __wanted, size_t __aligned, size_t __offset )
-{ return __mingw_aligned_offset_realloc (__ptr, __wanted, __aligned, __offset); }
-
-__cdecl __MINGW_NOTHROW
-__CRT_ALIAS __LIBIMPL__((LIB = memalign, FUNCTION = aligned_free))
-void _aligned_free (void *__ptr) { __mingw_free (__ptr); }
-
-#endif	/* __MSVCRT_VERSION__ < __MSVCR70_DLL */
-
-/* Regardless of availability of their Microsoft alternatives, the
- * __mingw_aligned_malloc(), and __mingw_aligned_realloc() functions
- * may always be implemented in terms of their "offset" siblings, by
- * simply specifying an offset of zero.
- */
-__cdecl __MINGW_NOTHROW __MINGW_ATTRIB_MALLOC
-__CRT_ALIAS __LIBIMPL__(( FUNCTION = mingw_aligned_malloc ))
-void *__mingw_aligned_malloc( size_t __want, size_t __aligned )
-{ return __mingw_aligned_offset_malloc( __want, __aligned, (size_t)(0) ); }
-
-__cdecl __MINGW_NOTHROW
-__CRT_ALIAS __LIBIMPL__(( FUNCTION = mingw_aligned_realloc ))
-void *__mingw_aligned_realloc( void *__ptr, size_t __want, size_t __aligned )
-{ return __mingw_aligned_offset_realloc( __ptr, __want, __aligned, (size_t)(0) ); }
-
-_END_C_DECLS
-
-#endif	/* ! RC_INVOKED */
-#endif	/* !_MALLOC_H: $RCSfile: malloc.h,v $: end of file */
+#endif /* _MALLOC_H_ */

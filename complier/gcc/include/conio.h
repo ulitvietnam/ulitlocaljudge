@@ -1,149 +1,318 @@
-/*
- * conio.h
- *
- * Low level console I/O functions.  Pretty please try to use the ANSI
- * standard ones if you are writing new code.
- *
- * $Id: conio.h,v 7f0aa41f8caf 2018/10/21 15:39:35 keith $
- *
- * Written by Colin Peters <colin@bird.fu.is.saga-u.ac.jp>
- * Copyright (C) 1997, 1999-2001, 2003, 2004, 2007, 2018, MinGW.org Project.
- *
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice, this permission notice, and the following
- * disclaimer shall be included in all copies or substantial portions of
- * the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OF OR OTHER
- * DEALINGS IN THE SOFTWARE.
- *
+/**
+ * This file has no copyright assigned and is placed in the Public Domain.
+ * This file is part of the mingw-w64 runtime package.
+ * No warranty is given; refer to the file DISCLAIMER.PD within this package.
  */
-#ifndef _CONIO_H
-#pragma GCC system_header
+#ifndef _INC_CONIO
+#define _INC_CONIO
 
-/* When including <wchar.h>, some of the definitions and declarations
- * which are nominally provided in <conio.h> must be duplicated.  Rather
- * than require duplicated maintenance effort, we provide for partial
- * inclusion of <conio.h> by <wchar.h>; only when not included in
- * this partial fashion...
- */
-#ifndef __WCHAR_H_SOURCED__
- /* ...which is exclusive to <wchar.h>, do we assert the multiple
-  * inclusion guard for <conio.h> itself.
-  */
-#define _CONIO_H
-
-/* All MinGW.org headers are expected to include <_mingw.h>; when
- * selectively included by <wchar.h>, that responsibility has already
- * been addressed, but for free-standing inclusion we do so now.
- */
-#include <_mingw.h>
-#endif	/* !__WCHAR_H_SOURCED__ */
-
-#ifndef RC_INVOKED
-/* There is nothing here which is useful to the resource compiler;
- * for any other form of compilation, and regardless of the scope in
- * which <conio.h> is included, we need definitions for wchar_t, and
- * wint_t; get them by selective inclusion of <stddef.h>.
- */
-#define __need_wint_t
-#define __need_wchar_t
+#include <crtdefs.h>
+#include <corecrt_stdio_config.h>
 #include <stddef.h>
 
-_BEGIN_C_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#ifdef _CONIO_H
-/* The following declarations are to be exposed only on free-standing
- * inclusion of <conio.h>
- */
-_CRTIMP __cdecl __MINGW_NOTHROW  char *_cgets (char*);
-_CRTIMP __cdecl __MINGW_NOTHROW  int   _cprintf (const char*, ...);
-_CRTIMP __cdecl __MINGW_NOTHROW  int   _cputs (const char*);
-_CRTIMP __cdecl __MINGW_NOTHROW  int   _cscanf (char*, ...);
+  _CRTIMP char *_cgets(char *_Buffer) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
+  _CRTIMP int __cdecl _cputs(const char *_Str);
+  _CRTIMP int __cdecl _getch(void);
+  _CRTIMP int __cdecl _getche(void);
+  _CRTIMP int __cdecl _kbhit(void);
 
-_CRTIMP __cdecl __MINGW_NOTHROW  int   _getch (void);
-_CRTIMP __cdecl __MINGW_NOTHROW  int   _getche (void);
-_CRTIMP __cdecl __MINGW_NOTHROW  int   _kbhit (void);
-_CRTIMP __cdecl __MINGW_NOTHROW  int   _putch (int);
-_CRTIMP __cdecl __MINGW_NOTHROW  int   _ungetch (int);
+#ifdef _UCRT
+  int __cdecl __conio_common_vcprintf(unsigned __int64 _Options, const char *_Format, _locale_t _Locale, va_list _ArgList);
+  int __cdecl __conio_common_vcprintf_p(unsigned __int64 _Options, const char *_Format, _locale_t _Locale, va_list _ArgList);
+  int __cdecl __conio_common_vcprintf_s(unsigned __int64 _Options, const char *_Format, _locale_t _Locale, va_list _ArgList);
+  int __cdecl __conio_common_vcscanf(unsigned __int64 _Options, const char *_Format, _locale_t _Locale, va_list _ArgList);
 
-#if _WIN32_WINNT >= _WIN32_WINNT_WINXP || __MSVCRT_VERSION__ >= __MSVCR70_DLL
-/* Wide character variants of the console I/O functions were first
- * introduced in non-free MSVCR70.DLL, and subsequently supported by
- * MSVCRT.DLL from WinXP onwards.  Some are declared in <wchar.t> in
- * addition to <conio.h>; the following are exclusive to <conio.h>
- */
-_CRTIMP __cdecl __MINGW_NOTHROW  wint_t  _putwch (wchar_t);
+  __mingw_ovr int __cdecl _vcprintf(const char * __restrict__ _Format,va_list _ArgList)
+  {
+    return __conio_common_vcprintf(0, _Format, NULL, _ArgList);
+  }
+  __mingw_ovr int __cdecl _cprintf(const char * __restrict__ _Format,...)
+  {
+    __builtin_va_list _ArgList;
+    int _Ret;
+    __builtin_va_start(_ArgList, _Format);
+    _Ret = _vcprintf(_Format, _ArgList);
+    __builtin_va_end(_ArgList);
+    return _Ret;
+  }
+  __mingw_ovr __MINGW_ATTRIB_DEPRECATED_SEC_WARN
+  int __cdecl _cscanf(const char * __restrict__ _Format,...)
+  {
+    __builtin_va_list _ArgList;
+    int _Ret;
+    __builtin_va_start(_ArgList, _Format);
+    _Ret = __conio_common_vcscanf(0, _Format, NULL, _ArgList);
+    __builtin_va_end(_ArgList);
+    return _Ret;
+  }
+  __mingw_ovr __MINGW_ATTRIB_DEPRECATED_SEC_WARN
+  int __cdecl _cscanf_l(const char * __restrict__ _Format,_locale_t _Locale,...)
+  {
+    __builtin_va_list _ArgList;
+    int _Ret;
+    __builtin_va_start(_ArgList, _Locale);
+    _Ret = __conio_common_vcscanf(0, _Format, _Locale, _ArgList);
+    __builtin_va_end(_ArgList);
+    return _Ret;
+  }
 
-#if __MSVCRT_VERSION__ >= __MSVCR80_DLL
-/* Variants which do not perform thread locking require non-free
- * MSVCR80.DLL, or later; they are not supported by MSVCRT.DLL
- */
-_CRTIMP __cdecl __MINGW_NOTHROW  int     _getch_nolock (void);
-_CRTIMP __cdecl __MINGW_NOTHROW  int     _getche_nolock (void);
-_CRTIMP __cdecl __MINGW_NOTHROW  int     _putch_nolock (int);
-_CRTIMP __cdecl __MINGW_NOTHROW  wint_t  _putwch_nolock (wchar_t);
-_CRTIMP __cdecl __MINGW_NOTHROW  int     _ungetch_nolock (int);
+  __mingw_ovr int __cdecl _vcprintf_p(const char * __restrict__ _Format,va_list _ArgList)
+  {
+    return __conio_common_vcprintf_p(0, _Format, NULL, _ArgList);
+  }
+  __mingw_ovr int __cdecl _cprintf_p(const char * __restrict__ _Format,...)
+  {
+    __builtin_va_list _ArgList;
+    int _Ret;
+    __builtin_va_start(_ArgList, _Format);
+    _Ret = _vcprintf_p(_Format, _ArgList);
+    __builtin_va_end(_ArgList);
+    return _Ret;
+  }
+  __mingw_ovr int __cdecl _vcprintf_l(const char * __restrict__ _Format,_locale_t _Locale,va_list _ArgList)
+  {
+    return __conio_common_vcprintf(0, _Format, _Locale, _ArgList);
+  }
+  __mingw_ovr int __cdecl _cprintf_l(const char * __restrict__ _Format,_locale_t _Locale,...)
+  {
+    __builtin_va_list _ArgList;
+    int _Ret;
+    __builtin_va_start(_ArgList, _Locale);
+    _Ret = _vcprintf_l(_Format, _Locale, _ArgList);
+    __builtin_va_end(_ArgList);
+    return _Ret;
+  }
+  __mingw_ovr int __cdecl _vcprintf_p_l(const char * __restrict__ _Format,_locale_t _Locale,va_list _ArgList)
+  {
+    return __conio_common_vcprintf_p(0, _Format, _Locale, _ArgList);
+  }
+  __mingw_ovr int __cdecl _cprintf_p_l(const char * __restrict__ _Format,_locale_t _Locale,...)
+  {
+    __builtin_va_list _ArgList;
+    int _Ret;
+    __builtin_va_start(_ArgList, _Locale);
+    _Ret = _vcprintf_p_l(_Format, _Locale, _ArgList);
+    __builtin_va_end(_ArgList);
+    return _Ret;
+  }
+#else
+  _CRTIMP int __cdecl _cprintf(const char * __restrict__ _Format,...);
+  _CRTIMP int __cdecl _cscanf(const char * __restrict__ _Format,...) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
+  _CRTIMP int __cdecl _cscanf_l(const char * __restrict__ _Format,_locale_t _Locale,...) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
 
-#endif	/* MSVCR80.DLL or later */
-#endif	/* WinXP, MSVCR70.DLL, or later */
+  _CRTIMP int __cdecl _vcprintf(const char * __restrict__ _Format,va_list _ArgList);
+  _CRTIMP int __cdecl _cprintf_p(const char * __restrict__ _Format,...);
+  _CRTIMP int __cdecl _vcprintf_p(const char * __restrict__ _Format,va_list _ArgList);
+  _CRTIMP int __cdecl _cprintf_l(const char * __restrict__ _Format,_locale_t _Locale,...);
+  _CRTIMP int __cdecl _vcprintf_l(const char * __restrict__ _Format,_locale_t _Locale,va_list _ArgList);
+  _CRTIMP int __cdecl _cprintf_p_l(const char * __restrict__ _Format,_locale_t _Locale,...);
+  _CRTIMP int __cdecl _vcprintf_p_l(const char * __restrict__ _Format,_locale_t _Locale,va_list _ArgList);
+#endif
 
-#ifndef _NO_OLDNAMES
-/* Early versions of the Microsoft runtime library provided a subset
- * of the above functions, named without the ugly initial underscore;
- * these remain supported, and should be used when coding to support
- * legacy Windows platforms.
- */
-_CRTIMP __cdecl __MINGW_NOTHROW  int  getch (void);
-_CRTIMP __cdecl __MINGW_NOTHROW  int  getche (void);
-_CRTIMP __cdecl __MINGW_NOTHROW  int  kbhit (void);
-_CRTIMP __cdecl __MINGW_NOTHROW  int  putch (int);
-_CRTIMP __cdecl __MINGW_NOTHROW  int  ungetch (int);
+#if defined(_X86_) && !defined(__x86_64)
+  int __cdecl _inp(unsigned short);
+  unsigned short __cdecl _inpw(unsigned short);
+  unsigned long __cdecl _inpd(unsigned short);
+  int __cdecl _outp(unsigned short,int);
+  unsigned short __cdecl _outpw(unsigned short,unsigned short);
+  unsigned long __cdecl _outpd(unsigned short,unsigned long);
+#endif
 
-#endif	/* !_NO_OLDNAMES */
-#endif	/* _CONIO_H */
+  _CRTIMP int __cdecl _putch(int _Ch);
+  _CRTIMP int __cdecl _ungetch(int _Ch);
+#if __MSVCRT_VERSION__ >= 0x800
+  _CRTIMP int __cdecl _getch_nolock(void);
+  _CRTIMP int __cdecl _getche_nolock(void);
+  _CRTIMP int __cdecl _putch_nolock(int _Ch);
+  _CRTIMP int __cdecl _ungetch_nolock(int _Ch);
+#endif
 
-#if ! (defined _CONIO_H && defined _WCHAR_H)
-/* The following are to be exposed either on free-standing inclusion
- * of <conio.h>, or on selective inclusion by <wchar.h>, but if both
- * guards are defined, then this is free-standing inclusion, and we
- * have already declared these by selective inclusion; there is no
- * need to declare them a second time.
- */
-#if _WIN32_WINNT >= _WIN32_WINNT_WINXP || __MSVCRT_VERSION__ >= __MSVCR70_DLL
-/* Wide character variants of the console I/O functions, in this group,
- * were first introduced in non-free Microsoft runtimes, from MSVCR70.DLL
- * onwards; they were not supported by MSVCRT.DLL prior to WinXP.
- */
-_CRTIMP __cdecl __MINGW_NOTHROW  wint_t  _getwch (void);
-_CRTIMP __cdecl __MINGW_NOTHROW  wint_t  _getwche (void);
-_CRTIMP __cdecl __MINGW_NOTHROW  wint_t  _ungetwch (wint_t);
+#ifndef _WCONIO_DEFINED
+#define _WCONIO_DEFINED
 
-#if __MSVCRT_VERSION__ >= __MSVCR80_DLL
-/* Variants which do not perform thread locking require non-free
- * MSVCR80.DLL, or later; they are not supported by MSVCRT.DLL
- */
-_CRTIMP __cdecl __MINGW_NOTHROW  wint_t  _getwch_nolock (void);
-_CRTIMP __cdecl __MINGW_NOTHROW  wint_t  _getwche_nolock (void);
-_CRTIMP __cdecl __MINGW_NOTHROW  wint_t  _ungetwch_nolock (wint_t);
+#ifndef WEOF
+#define WEOF (wint_t)(0xFFFF)
+#endif
 
-#endif	/* MSVCR80.DLL or later */
-#endif	/* WinXP, MSVCR70.DLL, or later */
-#endif	/* ! (_CONIO_H && _WCHAR_H) */
+  _CRTIMP wchar_t *_cgetws(wchar_t *_Buffer) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
+  _CRTIMP wint_t __cdecl _getwch(void);
+  _CRTIMP wint_t __cdecl _getwche(void);
+  _CRTIMP wint_t __cdecl _putwch(wchar_t _WCh);
+  _CRTIMP wint_t __cdecl _ungetwch(wint_t _WCh);
+  _CRTIMP int __cdecl _cputws(const wchar_t *_String);
+#ifdef _UCRT
+  int __cdecl __conio_common_vcwprintf(unsigned __int64 _Options, const wchar_t *_Format, _locale_t _Locale, va_list _ArgList);
+  int __cdecl __conio_common_vcwprintf_p(unsigned __int64 _Options, const wchar_t *_Format, _locale_t _Locale, va_list _ArgList);
+  int __cdecl __conio_common_vcwprintf_s(unsigned __int64 _Options, const wchar_t *_Format, _locale_t _Locale, va_list _ArgList);
+  int __cdecl __conio_common_vcwscanf(unsigned __int64 _Options, const wchar_t *_Format, _locale_t _Locale, va_list _ArgList);
 
-_END_C_DECLS
+  __mingw_ovr int __cdecl _vcwprintf(const wchar_t * __restrict__ _Format,va_list _ArgList)
+  {
+    return __conio_common_vcwprintf(_CRT_INTERNAL_LOCAL_PRINTF_OPTIONS, _Format, NULL, _ArgList);
+  }
+  __mingw_ovr int __cdecl _cwprintf(const wchar_t * __restrict__ _Format,...)
+  {
+    __builtin_va_list _ArgList;
+    int _Ret;
+    __builtin_va_start(_ArgList, _Format);
+    _Ret = _vcwprintf(_Format, _ArgList);
+    __builtin_va_end(_ArgList);
+    return _Ret;
+  }
+  __mingw_ovr __MINGW_ATTRIB_DEPRECATED_SEC_WARN
+  int __cdecl _cwscanf(const wchar_t * __restrict__ _Format,...)
+  {
+    __builtin_va_list _ArgList;
+    int _Ret;
+    __builtin_va_start(_ArgList, _Format);
+    _Ret = __conio_common_vcwscanf(_CRT_INTERNAL_LOCAL_SCANF_OPTIONS, _Format, NULL, _ArgList);
+    __builtin_va_end(_ArgList);
+    return _Ret;
+  }
+  __mingw_ovr __MINGW_ATTRIB_DEPRECATED_SEC_WARN
+  int __cdecl _cwscanf_l(const wchar_t * __restrict__ _Format,_locale_t _Locale,...)
+  {
+    __builtin_va_list _ArgList;
+    int _Ret;
+    __builtin_va_start(_ArgList, _Locale);
+    _Ret = __conio_common_vcwscanf(_CRT_INTERNAL_LOCAL_SCANF_OPTIONS, _Format, _Locale, _ArgList);
+    __builtin_va_end(_ArgList);
+    return _Ret;
+  }
+  __mingw_ovr int __cdecl _vcwprintf_p(const wchar_t * __restrict__ _Format,va_list _ArgList)
+  {
+    return __conio_common_vcwprintf_p(_CRT_INTERNAL_LOCAL_PRINTF_OPTIONS, _Format, NULL, _ArgList);
+  }
+  __mingw_ovr int __cdecl _cwprintf_p(const wchar_t * __restrict__ _Format,...)
+  {
+    __builtin_va_list _ArgList;
+    int _Ret;
+    __builtin_va_start(_ArgList, _Format);
+    _Ret = _vcwprintf_p(_Format, _ArgList);
+    __builtin_va_end(_ArgList);
+    return _Ret;
+  }
+  __mingw_ovr int __cdecl _vcwprintf_l(const wchar_t * __restrict__ _Format,_locale_t _Locale,va_list _ArgList)
+  {
+    return __conio_common_vcwprintf(_CRT_INTERNAL_LOCAL_PRINTF_OPTIONS, _Format, _Locale, _ArgList);
+  }
+  __mingw_ovr int __cdecl _cwprintf_l(const wchar_t * __restrict__ _Format,_locale_t _Locale,...)
+  {
+    __builtin_va_list _ArgList;
+    int _Ret;
+    __builtin_va_start(_ArgList, _Locale);
+    _Ret = _vcwprintf_l(_Format, _Locale, _ArgList);
+    __builtin_va_end(_ArgList);
+    return _Ret;
+  }
+  __mingw_ovr int __cdecl _vcwprintf_p_l(const wchar_t * __restrict__ _Format,_locale_t _Locale,va_list _ArgList)
+  {
+    return __conio_common_vcwprintf_p(_CRT_INTERNAL_LOCAL_PRINTF_OPTIONS, _Format, _Locale, _ArgList);
+  }
+  __mingw_ovr int __cdecl _cwprintf_p_l(const wchar_t * __restrict__ _Format,_locale_t _Locale,...)
+  {
+    __builtin_va_list _ArgList;
+    int _Ret;
+    __builtin_va_start(_ArgList, _Locale);
+    _Ret = _vcwprintf_p_l(_Format, _Locale, _ArgList);
+    __builtin_va_end(_ArgList);
+    return _Ret;
+  }
+#else
+  _CRTIMP int __cdecl _cwprintf(const wchar_t * __restrict__ _Format,...);
+  _CRTIMP int __cdecl _cwscanf(const wchar_t * __restrict__ _Format,...) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
+  _CRTIMP int __cdecl _cwscanf_l(const wchar_t * __restrict__ _Format,_locale_t _Locale,...) __MINGW_ATTRIB_DEPRECATED_SEC_WARN;
+  _CRTIMP int __cdecl _vcwprintf(const wchar_t * __restrict__ _Format,va_list _ArgList);
+  _CRTIMP int __cdecl _cwprintf_p(const wchar_t * __restrict__ _Format,...);
+  _CRTIMP int __cdecl _vcwprintf_p(const wchar_t * __restrict__ _Format,va_list _ArgList);
+  _CRTIMP int __cdecl _cwprintf_l(const wchar_t * __restrict__ _Format,_locale_t _Locale,...);
+  _CRTIMP int __cdecl _vcwprintf_l(const wchar_t * __restrict__ _Format,_locale_t _Locale,va_list _ArgList);
+  _CRTIMP int __cdecl _cwprintf_p_l(const wchar_t * __restrict__ _Format,_locale_t _Locale,...);
+  _CRTIMP int __cdecl _vcwprintf_p_l(const wchar_t * __restrict__ _Format,_locale_t _Locale,va_list _ArgList);
+#endif
+#if __MSVCRT_VERSION__ >= 0x800
+  _CRTIMP wint_t __cdecl _putwch_nolock(wchar_t _WCh);
+  _CRTIMP wint_t __cdecl _getwch_nolock(void);
+  _CRTIMP wint_t __cdecl _getwche_nolock(void);
+  _CRTIMP wint_t __cdecl _ungetwch_nolock(wint_t _WCh);
+#endif
+#endif
 
-#endif	/* ! RC_INVOKED */
-#endif	/* !_CONIO_H: $RCSfile: conio.h,v $: end of file */
+#ifndef	NO_OLDNAMES
+  char *__cdecl cgets(char *_Buffer) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+
+#ifdef _UCRT
+  __mingw_ovr int __cdecl cprintf(const char * __restrict__ _Format,...) __MINGW_ATTRIB_DEPRECATED_MSVC2005
+  {
+    __builtin_va_list _ArgList;
+    int _Ret;
+    __builtin_va_start(_ArgList, _Format);
+    _Ret = _vcprintf(_Format, _ArgList);
+    __builtin_va_end(_ArgList);
+    return _Ret;
+  }
+  __mingw_ovr int __cdecl cscanf(const char * __restrict__ _Format,...) __MINGW_ATTRIB_DEPRECATED_MSVC2005
+  {
+    __builtin_va_list _ArgList;
+    int _Ret;
+    __builtin_va_start(_ArgList, _Format);
+    _Ret = __conio_common_vcscanf(0, _Format, NULL, _ArgList);
+    __builtin_va_end(_ArgList);
+    return _Ret;
+  }
+#else
+  int __cdecl cprintf(const char * __restrict__ _Format,...) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+  int __cdecl cscanf(const char * __restrict__ _Format,...) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+#endif
+  int __cdecl cputs(const char *_Str) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+  int __cdecl getch(void) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+  int __cdecl getche(void) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+  int __cdecl kbhit(void) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+  int __cdecl putch(int _Ch) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+  int __cdecl ungetch(int _Ch) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+
+#if (defined(_X86_) && !defined(__x86_64))
+  int __cdecl inp(unsigned short) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+  unsigned short __cdecl inpw(unsigned short) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+  int __cdecl outp(unsigned short,int) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+  unsigned short __cdecl outpw(unsigned short,unsigned short) __MINGW_ATTRIB_DEPRECATED_MSVC2005;
+#endif
+
+    /* __cpuid moved to intrin.h per msdn */
+    /* __inbyte moved to intrin.h per msdn */
+    /* __inbytestring moved to intrin.h per msdn */
+    /* __indword moved to intrin.h per msdn */
+    /* __indwordstring moved to intrin.h per msdn */
+    /* __inword moved to intrin.h per msdn */
+    /* __inwordstring moved to intrin.h per msdn */
+    /* __outbyte moved to intrin.h per msdn */
+    /* __outbytestring moved to intrin.h per msdn */
+    /* __outdword moved to intrin.h per msdn */
+    /* __outdwordstring moved to intrin.h per msdn */
+    /* __outword moved to intrin.h per msdn */
+    /* __outwordstring moved to intrin.h per msdn */
+    /* __readcr0 moved to intrin.h per msdn */
+    /* __readcr2 moved to intrin.h per msdn */
+    /* __readcr3 moved to intrin.h per msdn */
+    /* __readcr4 moved to intrin.h per msdn */
+    /* __readcr8 moved to intrin.h per msdn */
+    /* __readmsr moved to intrin.h per msdn */
+    /* __writecr0 moved to intrin.h per msdn */
+    /* __writecr2 moved to intrin.h per msdn */
+    /* __writecr3 moved to intrin.h per msdn */
+    /* __writecr4 moved to intrin.h per msdn */
+    /* __writecr8 moved to intrin.h per msdn */
+    /* __writemsr moved to intrin.h per msdn */
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#include <sec_api/conio_s.h>
+
+#endif

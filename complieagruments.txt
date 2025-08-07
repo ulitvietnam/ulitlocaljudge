@@ -1,0 +1,2 @@
+python=
+cpp=-std=c++14 -pipe -O2 -s -static -lm -x c++ -Wl,--stack,1073741824

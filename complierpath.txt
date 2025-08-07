@@ -1,0 +1,2 @@
+python=complier\python\
+gcc=complier\gcc\bin\
